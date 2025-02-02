@@ -14,11 +14,5 @@ preview_urls = false
 # Route reference
 # https://developers.cloudflare.com/workers/configuration/routing/routes/
 
-#[vars]
-#debug=true # verbose mode - print as much as possible
-#fixedURL="https://www.google.com"  # always use fixed URL
-#localtest="http://localhost:3000" # localtest mode, fixedURL + debug
-#assign=true # enable esi:assign tag - could be slower than without it
-
 # wrangler.toml reference
 # https://developers.cloudflare.com/workers/wrangler/configuration/

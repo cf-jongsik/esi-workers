@@ -1,17 +1,46 @@
-This workers script will stay between request and response as a workers-routes.
-<br/>
-The script will check for "<ESI:include>" HTML tag from the origin response then replace it with the fetched body according to the ESI tag.
-<br/>
-This is just a Typescript version of original Javascript from here.
-<br/>
-https://blog.cloudflare.com/edge-side-includes-with-cloudflare-workers
-<br/>
-<br/>
+# ESI Workers
+
+This project is a Cloudflare Workers application that processes incoming HTTP requests, performs HTML rewriting, and handles variable replacements in the response.
+
+## Features
+
+- Fetches and processes incoming HTTP requests.
+- Rewrites HTML content using `HTMLRewriter`.
+- Replaces variables in the response content based on predefined mappings.
+
+## Installation
+
+1. Clone the repository:
 
 ```sh
-1. after git clone
-2. rename wrangler.toml.example to wrangler.toml
-3. uncomment route and change it to fit your use
-4. deploy with wrangler
-DONE
+git clone https://github.com/cf-jongsik/esi-workers.git
+cd esi-workers
+```
+
+2. Install dependencies:
+
+```sh
+npm install
+```
+
+## Usage
+
+To start the development server, run:
+
+```sh
+npm run dev
+```
+
+To build the project for production, run:
+
+```sh
+npm run build
+```
+
+## Deployment
+
+To deploy the project to Cloudflare Workers, run:
+
+```sh
+npm run deploy
 ```
