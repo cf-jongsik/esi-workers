@@ -4,7 +4,7 @@ type Variables = Record<string, string>;
 class ElementHandler {
 	private regex = /\$\{(.*?)\}/g;
 	private variables: Variables;
-	private includeBody: ReadableStream<any> | null = null;
+	private includeBody: ReadableStream<any> | string | null = null;
 	private includeType: string | null = null;
 
 	constructor(variables: Variables = Object.create(null)) {
@@ -12,19 +12,15 @@ class ElementHandler {
 	}
 
 	private async handleInclude(element: Element): Promise<void> {
-		if (env.DEBUG) console.debug('Processing include');
-
 		const src = element.getAttribute('src');
 		if (!src) {
 			console.warn('Include missing src attribute');
-			element.remove();
 			return;
 		}
 
 		const updatedSrc = src.replace(this.regex, (_, key) => this.variables[key] ?? '');
 		if (!updatedSrc) {
 			console.warn('Could not determine include URL');
-			element.remove();
 			return;
 		}
 
@@ -33,15 +29,16 @@ class ElementHandler {
 			const res = await fetch(updatedSrc, { redirect: 'follow' });
 			if (!res || !res.ok || !res.body) {
 				console.warn(`Failed to fetch include content: ${res?.status} ${res?.statusText}`);
-				element.remove();
 				return;
 			}
-			this.includeBody = res.body;
 			this.includeType = res.headers.get('Content-Type') ?? null;
-			element.remove();
+			if (this.includeType?.includes('html')) {
+				this.includeBody = res.body;
+			} else {
+				this.includeBody = await res.text();
+			}
 		} catch (error) {
 			console.error('Error fetching include:', error);
-			element.remove();
 		}
 	}
 
@@ -51,23 +48,14 @@ class ElementHandler {
 
 		if (!key || !value) {
 			console.warn('Assign missing required attributes');
-			element.remove();
 			return;
 		}
 		const updatedValue = value.replace(this.regex, (_, key) => this.variables[key] ?? '');
 		this.variables[key] = updatedValue;
 
 		if (env.DEBUG) console.debug('Variable assigned:', key, '=', updatedValue);
-		element.remove();
 	}
 	async element(element: Element): Promise<void> {
-		console.debug('Processing element:', element.tagName);
-		if (this.includeBody) {
-			if (this.includeType?.includes('text/html')) {
-				element.before(this.includeBody, { html: true });
-			}
-			this.includeBody = null; // Reset after appending
-		}
 		// If not an ESI tag, no further processing needed
 		if (!element.tagName.startsWith('esi:')) return;
 
@@ -77,13 +65,26 @@ class ElementHandler {
 		switch (command) {
 			case 'include':
 				await this.handleInclude(element);
+				if (this.includeBody) {
+					element.onEndTag((tag) => {
+						// TODO: THIS IS A WORKAROUND due to Cloudflare's HTMLRewriter bug
+						// TODO: SHOULD BE REMOVED WHEN FIXED
+						if (!tag.name.startsWith('esi:')) {
+							tag.before(`</${tag.name}>`, { html: true });
+						}
+						// TODO: WORKAROUND END - REMOVE THIS WORKAROUND
+					});
+					element.before(this.includeBody, { html: true });
+					this.includeBody = null;
+					element.remove();
+					return;
+				}
 				break;
 			case 'assign':
 				this.handleAssign(element);
 				break;
 			default:
 				if (env.DEBUG) console.debug('Unsupported ESI command:', command);
-				element.remove();
 		}
 	}
 }
