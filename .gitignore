@@ -168,5 +168,6 @@ dist
 
 # wrangler project
 wrangler.toml
+wrangler.jsonc
 .dev.vars
 .wrangler/
